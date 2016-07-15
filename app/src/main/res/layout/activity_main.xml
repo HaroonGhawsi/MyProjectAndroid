@@ -1,0 +1,74 @@
+<LinearLayout
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/distance_duration"
+        android:layout_width="385dp"
+        android:layout_height="35dp"
+        android:text="@string/message"
+        android:background="#f0d50f"
+        android:textColor="#0a0101" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="FROM"
+            android:id="@+id/FromAddress" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="TO"
+            android:id="@+id/ToAddress" />
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="385dp"
+            android:layout_height="wrap_content"
+            android:text="Search"
+            android:id="@+id/Bsearch"
+            android:layout_gravity="right"
+            android:onClick="onSearch" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools" android:layout_width="342dp"
+            android:layout_height="473dp" android:id="@+id/map" tools:context=".MapsActivity"
+            android:name="com.google.android.gms.maps.SupportMapFragment" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <Button
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="43dp"
+                android:layout_height="wrap_content"
+                android:text="+"
+                android:id="@+id/Bzoomin"
+                android:onClick="onZoom" />
+
+            <Button
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="-"
+                android:id="@+id/Bzoomout"
+                android:layout_gravity="center_vertical"
+                android:onClick="onZoom" />
+
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
+
