@@ -12,15 +12,12 @@ import android.net.Uri;
 
 import java.sql.SQLException;
 
-/** A custom Content Provider to do the database operations */
 public class LocationsContentProvider extends ContentProvider{
 
     public static final String PROVIDER_NAME = "com.example.haroonghawsi.myproject.locations";
 
-    /** A uri to do operations on locations table. A content provider is identified by its uri */
     public static final Uri CONTENT_URI = Uri.parse("content://" + PROVIDER_NAME + "/locations" );
 
-    /** Constant to identify the requested operation */
     private static final int LOCATIONS = 1;
 
     private static final UriMatcher uriMatcher ;
@@ -30,17 +27,14 @@ public class LocationsContentProvider extends ContentProvider{
         uriMatcher.addURI(PROVIDER_NAME, "locations", LOCATIONS);
     }
 
-    /** This content provider does the database operations by this object */
     LocationsDB mLocationsDB;
 
-    /** A callback method which is invoked when the content provider is starting up */
     @Override
     public boolean onCreate() {
         mLocationsDB = new LocationsDB(getContext());
         return true;
     }
 
-    /** A callback method which is invoked when insert operation is requested on this content provider */
     @Override
     public Uri insert(Uri uri, ContentValues values) {
         long rowID = mLocationsDB.insert(values);
@@ -64,7 +58,7 @@ public class LocationsContentProvider extends ContentProvider{
         return 0;
     }
 
-    /** A callback method which is invoked when delete operation is requested on this content provider */
+
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         int cnt = 0;
@@ -72,7 +66,7 @@ public class LocationsContentProvider extends ContentProvider{
         return cnt;
     }
 
-    /** A callback method which is invoked by default content uri */
+
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
 

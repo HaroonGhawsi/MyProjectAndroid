@@ -4,6 +4,8 @@ package com.example.haroonghawsi.myproject;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -13,6 +15,7 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,8 +46,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     GoogleMap map;
     ArrayList<LatLng> markerPoints;
     TextView DistanceDuration;
-
-
+    LatLng fromOrigin;
+    LatLng toDest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,11 +57,33 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         DistanceDuration = (TextView) findViewById(R.id.distance_duration);
         markerPoints = new ArrayList<LatLng>();
 
-
-
         SupportMapFragment fm = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         map = fm.getMap();
         //map.setMyLocationEnabled(true);
+
+        Button search = (Button) findViewById(R.id.Bsearch);
+
+        View.OnClickListener searchClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                EditText from = (EditText) findViewById(R.id.FromAddress);
+                EditText to = (EditText) findViewById(R.id.ToAddress);
+
+                String fromLocation = from.getText().toString();
+                String toLocation = from.getText().toString();
+
+                if (fromLocation != null && !fromLocation.equals("")) {
+                    new GeocoderTask().execute(fromLocation);
+                }
+
+                if (toLocation != null && !toLocation.equals("")) {
+                    new GeocoderTask().execute(toLocation);
+                }
+
+            }
+        };
+        search.setOnClickListener(searchClickListener);
+
 
         map.setOnMapClickListener(new OnMapClickListener() {
 
@@ -95,7 +120,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                     ContentValues contentValues = new ContentValues();
 
                     // Setting latitude in ContentValues
-                    contentValues.put(LocationsDB.FIELD_LAT, point.latitude );
+                    contentValues.put(LocationsDB.FIELD_LAT, point.latitude);
 
                     // Setting longitude in ContentValues
                     contentValues.put(LocationsDB.FIELD_LNG, point.longitude);
@@ -108,6 +133,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
                     // Storing the latitude, longitude and zoom level to SQLite database
                     insertTask.execute(contentValues);
+
+                    Toast.makeText(getBaseContext(), "Travel Path Saved in Database", Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -124,11 +151,12 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
                 // Deleting all the rows from SQLite database table
                 deleteTask.execute();
 
-                Toast.makeText(getBaseContext(), "All markers are removed", Toast.LENGTH_LONG).show();
+                Toast.makeText(getBaseContext(), "All markers are removed from Database", Toast.LENGTH_LONG).show();
             }
         });
     }
-    private void drawMarker(LatLng point){
+
+    private void drawMarker(LatLng point) {
         // Creating an instance of MarkerOptions
         MarkerOptions markerOptions = new MarkerOptions();
 
@@ -139,7 +167,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         map.addMarker(markerOptions);
     }
 
-    private class LocationInsertTask extends AsyncTask<ContentValues, Void, Void>{
+    private class LocationInsertTask extends AsyncTask<ContentValues, Void, Void> {
         @Override
         protected Void doInBackground(ContentValues... contentValues) {
 
@@ -148,7 +176,8 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             return null;
         }
     }
-    private class LocationDeleteTask extends AsyncTask<Void, Void, Void>{
+
+    private class LocationDeleteTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
 
@@ -157,6 +186,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             return null;
         }
     }
+
     @Override
     public Loader<Cursor> onCreateLoader(int arg0, Bundle arg1) {
 
@@ -178,12 +208,11 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
     }
 
     @Override
-    public void onLoadFinished(Loader<Cursor> arg0,
-                               Cursor arg1) {
+    public void onLoadFinished(Loader<Cursor> arg0, Cursor arg1) {
         int locationCount = 0;
-        double lat=0;
-        double lng=0;
-        float zoom=0;
+        double lat = 0;
+        double lng = 0;
+        float zoom = 0;
 
         // Number of locations available in the SQLite database table
         locationCount = arg1.getCount();
@@ -191,7 +220,7 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
         // Move the current record pointer to the first row of the table
         arg1.moveToFirst();
 
-        for(int i=0;i<locationCount;i++){
+        for (int i = 0; i < locationCount; i++) {
 
             // Get the latitude
             lat = arg1.getDouble(arg1.getColumnIndex(LocationsDB.FIELD_LAT));
@@ -212,9 +241,9 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
             arg1.moveToNext();
         }
 
-        if(locationCount>0){
+        if (locationCount > 0) {
             // Moving CameraPosition to last clicked position
-            map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat,lng)));
+            map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat, lng)));
 
             // Setting the zoom level in the map on last position  is clicked
             map.animateCamera(CameraUpdateFactory.zoomTo(zoom));
@@ -226,38 +255,38 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
     }
 
-    private String getDirectionsUrl(LatLng origin,LatLng dest){
-        EditText fromAddress = (EditText)findViewById(R.id.FromAddress);
-        EditText toAddress = (EditText)findViewById(R.id.ToAddress);
+    private String getDirectionsUrl(LatLng origin, LatLng dest) {
+        EditText fromAddress = (EditText) findViewById(R.id.FromAddress);
+        EditText toAddress = (EditText) findViewById(R.id.ToAddress);
 
         // Origin of route
-        String str_origin = "origin="+origin.latitude+","+origin.longitude;
+        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
         fromAddress.setText(String.format(String.valueOf(origin.latitude + ", " + origin.longitude)));
 
         // Destination of route
-        String str_dest = "destination="+dest.latitude+","+dest.longitude;
+        String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
 
         toAddress.setText(String.format(String.valueOf(dest.latitude + ", " + dest.longitude)));
         // Sensor enabled
         String sensor = "sensor=false";
 
         // Building the parameters to the web service
-        String parameters = str_origin+"&"+str_dest+"&"+sensor;
+        String parameters = str_origin + "&" + str_dest + "&" + sensor;
 
         // Output format
         String output = "json";
 
         // Building the url to the web service
-        String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+parameters;
+        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
 
         return url;
     }
 
-    private String downloadUrl(String strUrl) throws IOException{
+    private String downloadUrl(String strUrl) throws IOException {
         String data = "";
         InputStream iStream = null;
         HttpURLConnection urlConnection = null;
-        try{
+        try {
             URL url = new URL(strUrl);
 
             // Creating an http connection to communicate with url
@@ -271,10 +300,10 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
             BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
 
-            StringBuffer sb  = new StringBuffer();
+            StringBuffer sb = new StringBuffer();
 
             String line = "";
-            while( ( line = br.readLine())  != null){
+            while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
 
@@ -282,118 +311,172 @@ public class MainActivity extends FragmentActivity implements LoaderManager.Load
 
             br.close();
 
-        }catch(Exception e){
+        } catch (Exception e) {
             Log.d("Exception loading url", e.toString());
-        }finally{
+        } finally {
             iStream.close();
             urlConnection.disconnect();
         }
         return data;
     }
 
-    private class DownloadTask extends AsyncTask<String, Void, String>{
+    private class GeocoderTask extends AsyncTask<String, Void, List<Address>> {
 
-        // Downloading data in non-ui thread
         @Override
-        protected String doInBackground(String... url) {
+        protected List<Address> doInBackground(String... locationName) {
+            Geocoder geocoder = new Geocoder(getBaseContext());
+            List<Address> addresses = null;
 
-            // For storing data from web service
-            String data = "";
+            try {
+                addresses = geocoder.getFromLocationName(locationName[0], 1);
 
-            try{
-                // Fetching the data from web service
-                data = downloadUrl(url[0]);
-            }catch(Exception e){
-                Log.d("Background Task",e.toString());
-            }
-            return data;
-        }
-
-        // Executes in UI thread, after the execution of
-        // doInBackground()
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-
-            ParserTask parserTask = new ParserTask();
-
-            // Invokes the thread for parsing the JSON data
-            parserTask.execute(result);
-        }
-    }
-
-    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String,String>>> >{
-
-        // Parsing the data in non-ui thread
-        @Override
-        protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
-
-            JSONObject jObject;
-            List<List<HashMap<String, String>>> routes = null;
-
-            try{
-                jObject = new JSONObject(jsonData[0]);
-                DirectionsJSONParser parser = new DirectionsJSONParser();
-
-                // Starts parsing data
-                routes = parser.parse(jObject);
-            }catch(Exception e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-            return routes;
+            return addresses;
         }
-
-        // Executes in UI thread, after the parsing process
         @Override
-        protected void onPostExecute(List<List<HashMap<String, String>>> result) {
-            ArrayList<LatLng> points = null;
-            PolylineOptions lineOptions = null;
-            MarkerOptions markerOptions = new MarkerOptions();
-            String distance = "";
-            String duration = "";
+        protected void onPostExecute(List<Address> addresses) {
 
-            if(result.size()<1){
-                Toast.makeText(getBaseContext(), "No Points", Toast.LENGTH_SHORT).show();
-                return;
+            if (addresses == null || addresses.size() == 0) {
+                Toast.makeText(getBaseContext(), "No Location found", Toast.LENGTH_SHORT).show();
             }
 
-            // Traversing through all the routes
-            for(int i=0;i<result.size();i++){
-                points = new ArrayList<LatLng>();
-                lineOptions = new PolylineOptions();
+            // Clears all the existing markers on the map
+            map.clear();
 
-                // Fetching i-th route
-                List<HashMap<String, String>> path = result.get(i);
+            // Adding Markers on Google Map for each matching address
+            for (int i = 0; i < addresses.size(); i++) {
 
-                // Fetching all the points in i-th route
-                for(int j=0;j<path.size();j++){
-                    HashMap<String,String> point = path.get(j);
+                Address address = (Address) addresses.get(i);
 
-                    if(j==0){    // Get distance from the list
-                        distance = (String)point.get("distance");
-                        continue;
-                    }else if(j==1){ // Get duration from the list
-                        duration = (String)point.get("duration");
-                        continue;
-                    }
+                // Creating an instance of GeoPoint, to display in Google Map
+                fromOrigin = new LatLng(address.getLatitude(), address.getLongitude());
 
-                    double lat = Double.parseDouble(point.get("lat"));
-                    double lng = Double.parseDouble(point.get("lng"));
-                    LatLng position = new LatLng(lat, lng);
 
-                    points.add(position);
+                String addressText = String.format("%s, %s",
+                        address.getMaxAddressLineIndex() > 0 ? address.getAddressLine(0) : "",
+                        address.getCountryName());
+
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(fromOrigin);
+                markerOptions.title(addressText);
+
+                map.addMarker(markerOptions);
+
+                // Locate the first location
+                if (i == 0) {
+                    map.animateCamera(CameraUpdateFactory.newLatLng(fromOrigin));
                 }
-
-                // Adding all the points in the route to LineOptions
-                lineOptions.addAll(points);
-                lineOptions.width(10);
-                lineOptions.color(Color.BLUE);
+                if (i == 1) {
+                    map.animateCamera(CameraUpdateFactory.newLatLng(toDest));
+                }
             }
-
-            DistanceDuration.setText("Distance:"+distance + ", Duration:"+duration);
-
-            // Drawing polyline in the Google Map for the i-th route
-            map.addPolyline(lineOptions);
         }
     }
-}
+        private class DownloadTask extends AsyncTask<String, Void, String> {
+
+            // Downloading data in non-ui thread
+            @Override
+            protected String doInBackground(String... url) {
+
+                // For storing data from web service
+                String data = "";
+
+                try {
+                    // Fetching the data from web service
+                    data = downloadUrl(url[0]);
+                } catch (Exception e) {
+                    Log.d("Background Task", e.toString());
+                }
+                return data;
+            }
+
+            // Executes in UI thread, after the execution of
+            // doInBackground()
+            @Override
+            protected void onPostExecute(String result) {
+                super.onPostExecute(result);
+
+                ParserTask parserTask = new ParserTask();
+
+                // Invokes the thread for parsing the JSON data
+                parserTask.execute(result);
+            }
+        }
+
+        private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
+
+            // Parsing the data in non-ui thread
+            @Override
+            protected List<List<HashMap<String, String>>> doInBackground(String... jsonData) {
+
+                JSONObject jObject;
+                List<List<HashMap<String, String>>> routes = null;
+
+                try {
+                    jObject = new JSONObject(jsonData[0]);
+                    DirectionsJSONParser parser = new DirectionsJSONParser();
+
+                    // Starts parsing data
+                    routes = parser.parse(jObject);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return routes;
+            }
+
+            // Executes in UI thread, after the parsing process
+            @Override
+            protected void onPostExecute(List<List<HashMap<String, String>>> result) {
+                ArrayList<LatLng> points = null;
+                PolylineOptions lineOptions = null;
+                MarkerOptions markerOptions = new MarkerOptions();
+                String distance = "";
+                String duration = "";
+
+                if (result.size() < 1) {
+                    Toast.makeText(getBaseContext(), "No Points", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Traversing through all the routes
+                for (int i = 0; i < result.size(); i++) {
+                    points = new ArrayList<LatLng>();
+                    lineOptions = new PolylineOptions();
+
+                    // Fetching i-th route
+                    List<HashMap<String, String>> path = result.get(i);
+
+                    // Fetching all the points in i-th route
+                    for (int j = 0; j < path.size(); j++) {
+                        HashMap<String, String> point = path.get(j);
+
+                        if (j == 0) {    // Get distance from the list
+                            distance = (String) point.get("distance");
+                            continue;
+                        } else if (j == 1) { // Get duration from the list
+                            duration = (String) point.get("duration");
+                            continue;
+                        }
+
+                        double lat = Double.parseDouble(point.get("lat"));
+                        double lng = Double.parseDouble(point.get("lng"));
+                        LatLng position = new LatLng(lat, lng);
+
+                        points.add(position);
+                    }
+
+                    // Adding all the points in the route to LineOptions
+                    lineOptions.addAll(points);
+                    lineOptions.width(10);
+                    lineOptions.color(Color.BLUE);
+                }
+
+                DistanceDuration.setText("Distance:" + distance + ", Duration:" + duration);
+
+                // Drawing polyline in the Google Map for the i-th route
+                map.addPolyline(lineOptions);
+            }
+        }
+    }
